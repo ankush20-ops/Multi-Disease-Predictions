@@ -1,86 +1,69 @@
+
 import streamlit as st
 import numpy as np
 import joblib
-import os
 from utils import download_model
+
+# Download the model first
 download_model()
 
-import joblib
+# Load the model
 model = joblib.load("models/heart_disease_rf_optimized.pkl")
 
-st.set_page_config(page_title="Heart Disease Predictor", layout="wide")
-st.title("❤️ Heart Disease Prediction App")
+st.set_page_config(page_title="Heart Disease Prediction", layout="centered")
 
-st.markdown("Provide the patient's details in the sidebar to predict heart disease risk.")
+st.title("❤️ Heart Disease Risk Predictor")
 
-# Sidebar Inputs
-st.sidebar.header("🧾 Input Patient Data")
+st.markdown("Fill in the following information to predict the likelihood of heart disease.")
 
-age = st.sidebar.slider("Age", 18, 100, 40)
-gender = st.sidebar.radio("Gender", ["Female", "Male"])
-height = st.sidebar.slider("Height (cm)", 100, 250, 170)
-weight = st.sidebar.slider("Weight (kg)", 30, 200, 70)
-ap_hi = st.sidebar.slider("Systolic BP", 90, 200, 120)
-ap_lo = st.sidebar.slider("Diastolic BP", 60, 140, 80)
-cholesterol = st.sidebar.selectbox("Cholesterol", ["Normal", "Above Normal", "Well Above Normal"])
-gluc = st.sidebar.selectbox("Glucose", ["Normal", "Above Normal", "Well Above Normal"])
-smoke = st.sidebar.radio("Do you smoke?", ["No", "Yes"])
-alco = st.sidebar.radio("Consume alcohol?", ["No", "Yes"])
-active = st.sidebar.radio("Physically Active?", ["No", "Yes"])
+with st.form("prediction_form"):
+    age = st.number_input("Age", min_value=1, max_value=120, value=30)
+    gender = st.selectbox("Gender", ["Female", "Male"])
+    height = st.number_input("Height (in cm)", min_value=50, max_value=250, value=170)
+    weight = st.number_input("Weight (in kg)", min_value=10, max_value=300, value=70)
+    ap_hi = st.number_input("Systolic BP (ap_hi)", min_value=50, max_value=250, value=120)
+    ap_lo = st.number_input("Diastolic BP (ap_lo)", min_value=30, max_value=150, value=80)
+    cholesterol = st.selectbox("Cholesterol", ["Normal", "Above Normal", "Well Above Normal"])
+    gluc = st.selectbox("Glucose", ["Normal", "Above Normal", "Well Above Normal"])
+    smoke = st.selectbox("Do you smoke?", ["No", "Yes"])
+    alco = st.selectbox("Do you consume alcohol?", ["No", "Yes"])
+    active = st.selectbox("Are you physically active?", ["No", "Yes"])
+    submit = st.form_submit_button("Predict")
 
-# Mapping inputs
-gender = 1 if gender == "Female" else 2
-cholesterol_map = {"Normal": 1, "Above Normal": 2, "Well Above Normal": 3}
-gluc_map = {"Normal": 1, "Above Normal": 2, "Well Above Normal": 3}
-cholesterol = cholesterol_map[cholesterol]
-gluc = gluc_map[gluc]
-smoke = int(smoke == "Yes")
-alco = int(alco == "Yes")
-active = int(active == "Yes")
+if submit:
+    gender_val = 1 if gender == "Female" else 2
+    cholesterol_val = ["Normal", "Above Normal", "Well Above Normal"].index(cholesterol) + 1
+    gluc_val = ["Normal", "Above Normal", "Well Above Normal"].index(gluc) + 1
+    smoke_val = 1 if smoke == "Yes" else 0
+    alco_val = 1 if alco == "Yes" else 0
+    active_val = 1 if active == "Yes" else 0
 
-# Feature engineering
-bmi = weight / ((height / 100) ** 2)
-hypertension = int(ap_hi >= 140 or ap_lo >= 90)
-pulse_pressure = ap_hi - ap_lo
+    bmi = weight / ((height / 100) ** 2)
+    hypertension = int(ap_hi >= 140 or ap_lo >= 90)
+    pulse_pressure = ap_hi - ap_lo
 
-age_group_MidAge = int(30 < age <= 45)
-age_group_Old = int(45 < age <= 60)
-age_group_VeryOld = int(age > 60)
-cholesterol_2 = int(cholesterol == 2)
-cholesterol_3 = int(cholesterol == 3)
-gluc_2 = int(gluc == 2)
-gluc_3 = int(gluc == 3)
+    age_group_MidAge = int(30 < age <= 45)
+    age_group_Old = int(45 < age <= 60)
+    age_group_VeryOld = int(age > 60)
 
-input_features = np.array([[age, gender, height, weight, ap_hi, ap_lo, smoke, alco, active,
-                            bmi, hypertension, pulse_pressure,
-                            cholesterol_2, cholesterol_3, gluc_2, gluc_3,
-                            age_group_MidAge, age_group_Old, age_group_VeryOld]])
+    cholesterol_2 = int(cholesterol_val == 2)
+    cholesterol_3 = int(cholesterol_val == 3)
+    gluc_2 = int(gluc_val == 2)
+    gluc_3 = int(gluc_val == 3)
 
-if st.sidebar.button("🚀 Predict"):
+    input_features = np.array([[age, gender_val, height, weight, ap_hi, ap_lo, smoke_val, alco_val, active_val,
+                                bmi, hypertension, pulse_pressure,
+                                cholesterol_2, cholesterol_3, gluc_2, gluc_3,
+                                age_group_MidAge, age_group_Old, age_group_VeryOld]])
+
     prediction = model.predict(input_features)[0]
-    prob = model.predict_proba(input_features)[0][1]
+    probability = model.predict_proba(input_features)[0][1]
 
-    st.subheader("🔎 Prediction Result")
     if prediction == 1:
-        st.error(f"🔴 High Risk of Heart Disease. Probability: **{prob:.2f}**")
-        st.markdown("### 🔔 Recommendations:")
-        st.markdown("""
-        - 📆 Schedule a heart health checkup soon.
-        - 🧂 Reduce salt and avoid fried/junk food.
-        - 🚶 Increase physical activity and manage weight.
-        - 🧘‍♂️ Manage stress and get quality sleep.
-        - ❗ Consult a cardiologist immediately.
-        """)
+        st.error(f"🔴 High likelihood of heart disease.
+Probability: {round(probability, 2)}")
+        st.info("👉 Suggestion: Please consult a cardiologist. Maintain a healthy diet, monitor blood pressure, and exercise regularly.")
     else:
-        st.success(f"🟢 Low Risk of Heart Disease. Probability: **{prob:.2f}**")
-        st.markdown("### ✅ Tips to Stay Healthy:")
-        st.markdown("""
-        - 🥗 Maintain a balanced diet.
-        - 🚴 Exercise regularly (at least 30 minutes/day).
-        - 🚭 Avoid smoking and excessive alcohol.
-        - 📊 Track blood pressure and cholesterol levels.
-        - 💤 Ensure 7–8 hours of sleep daily.
-        """)
-
-st.markdown("---")
-st.markdown("📌 *This app uses a machine learning model for risk prediction. For medical concerns, always consult a doctor.*")
+        st.success(f"🟢 Low likelihood of heart disease.
+Probability: {round(probability, 2)}")
+        st.info("✅ Suggestion: Keep up your healthy lifestyle! Regular check-ups are still recommended.")
