@@ -3,11 +3,10 @@ import numpy as np
 import joblib
 import os
 from utils import download_model
-
-# Download and load the model
 download_model()
+
+import joblib
 model = joblib.load("models/heart_disease_rf_optimized.pkl")
-st.write("Model size:", os.path.getsize("models/heart_disease_rf_optimized.pkl"), "bytes")
 
 st.set_page_config(page_title="Heart Disease Predictor", layout="wide")
 st.title("❤️ Heart Disease Prediction App")
