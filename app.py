@@ -60,10 +60,8 @@ if submit:
     probability = model.predict_proba(input_features)[0][1]
 
     if prediction == 1:
-        st.error(f"🔴 High likelihood of heart disease.
-Probability: {round(probability, 2)}")
+        st.error(f"🔴 High likelihood of heart disease.\nProbability: {round(probability, 2)}")
         st.info("👉 Suggestion: Please consult a cardiologist. Maintain a healthy diet, monitor blood pressure, and exercise regularly.")
     else:
-        st.success(f"🟢 Low likelihood of heart disease.
-Probability: {round(probability, 2)}")
+        st.success(f"🟢 Low likelihood of heart disease.\nProbability: {round(probability, 2)}")
         st.info("✅ Suggestion: Keep up your healthy lifestyle! Regular check-ups are still recommended.")
